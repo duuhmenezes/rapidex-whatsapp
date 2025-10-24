@@ -16,7 +16,12 @@ const app = express();
 // CONFIGURAÇÃO BÁSICA
 // ===============================
 app.use(cors({
-  origin: ["https://rapidex.app.br", "https://painel.rapidex.app.br"],
+  origin: [
+    "https://rapidex.app.br",
+    "https://www.rapidex.app.br",
+    "https://painel.rapidex.app.br",
+    /^https?:\/\/(.*\.)?rapidex\.app\.br$/  // permite subdomínios e caminhos
+  ],
   methods: ["GET", "POST"],
   allowedHeaders: ["Content-Type"],
 }));
