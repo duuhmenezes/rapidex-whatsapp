@@ -41,7 +41,7 @@ function getClient(eid) {
       authStrategy: new LocalAuth({ dataPath: `${SESSION_DIR}/${eid}` }),
       puppeteer: {
         headless: true,
-        executablePath: puppeteer.executablePath(), // ✅ pega o Chrome baixado no build
+executablePath: process.env.CHROME_PATH || '/opt/render/.cache/puppeteer/chrome/linux-127.0.6533.88/chrome-linux64/chrome',
         args: [
           "--no-sandbox",
           "--disable-setuid-sandbox",
