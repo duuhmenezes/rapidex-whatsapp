@@ -3,7 +3,7 @@ import qrcode from "qrcode";
 import cors from "cors";
 import fs from "fs";
 import pkg from "whatsapp-web.js";
-import puppeteer from "puppeteer";
+import puppeteer from "puppeteer"; // 👈 adiciona o puppeteer principal
 import puppeteerExtra from "puppeteer-extra";
 import StealthPlugin from "puppeteer-extra-plugin-stealth";
 
@@ -36,7 +36,7 @@ function getClient(eid) {
       authStrategy: new LocalAuth({ dataPath: `${SESSION_DIR}/${eid}` }),
       puppeteer: {
         headless: true,
-        executablePath: puppeteer.executablePath(), // usa o Chromium do puppeteer
+        executablePath: puppeteer.executablePath(), // ✅ pega o Chrome baixado no build
         args: [
           "--no-sandbox",
           "--disable-setuid-sandbox",
@@ -47,6 +47,7 @@ function getClient(eid) {
           "--disable-software-rasterizer",
         ],
       },
+      puppeteerLaunch: puppeteerExtra,
     });
 
     clients[eid] = client;
@@ -80,7 +81,8 @@ function startClient(eid) {
     delete clients[eid];
   });
 
-  client.initialize();
+  client.initialize()
+    .catch(err => console.error("Erro na inicialização:", err.message));
 }
 
 // ===============================

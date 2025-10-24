@@ -1,18 +1,18 @@
-# Usa uma imagem já otimizada pro Puppeteer
-FROM ghcr.io/puppeteer/puppeteer:latest
+FROM node:20-bullseye
 
-# Cria a pasta de trabalho
+# Instala Chromium e dependências
+RUN apt-get update && apt-get install -y chromium \
+  && rm -rf /var/lib/apt/lists/*
+
 WORKDIR /app
 
-# Copia os arquivos do projeto
 COPY package*.json ./
-RUN npm install
+RUN npm install --omit=dev
 
-# Copia o resto do código
 COPY . .
 
-# Expõe a porta que o app usa
-EXPOSE 8000
+# Corrige permissão e espaço compartilhado
+RUN mkdir -p /dev/shm && chmod 1777 /dev/shm
 
-# Comando pra iniciar
-CMD ["node", "server.js"]
+EXPOSE 8000
+CMD ["npm", "start"]
