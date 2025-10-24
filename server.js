@@ -39,19 +39,21 @@ function getClient(eid) {
   if (!clients[eid]) {
     const client = new Client({
       authStrategy: new LocalAuth({ dataPath: `${SESSION_DIR}/${eid}` }),
-      puppeteer: {
-        headless: true,
-executablePath: process.env.CHROME_PATH || '/opt/render/.cache/puppeteer/chrome/linux-127.0.6533.88/chrome-linux64/chrome',
-        args: [
-          "--no-sandbox",
-          "--disable-setuid-sandbox",
-          "--disable-dev-shm-usage",
-          "--disable-gpu",
-          "--no-zygote",
-          "--single-process",
-          "--disable-software-rasterizer",
-        ],
-      },
+ puppeteer: {
+  headless: true,
+  executablePath:
+    process.env.CHROME_PATH ||
+    '/opt/render/.cache/puppeteer/chrome/linux-127.0.6533.88/chrome-linux64/chrome',
+  args: [
+    '--no-sandbox',
+    '--disable-setuid-sandbox',
+    '--disable-dev-shm-usage',
+    '--disable-gpu',
+    '--no-zygote',
+    '--single-process',
+    '--disable-software-rasterizer'
+  ]
+},
       puppeteerLaunch: puppeteerExtra,
     });
 
