@@ -7,6 +7,7 @@ import puppeteer from "puppeteer"; // 👈 adiciona o puppeteer principal
 import puppeteerExtra from "puppeteer-extra";
 import StealthPlugin from "puppeteer-extra-plugin-stealth";
 
+process.env.CHROME_PATH = '/usr/bin/google-chrome-stable';
 const { Client, LocalAuth } = pkg;
 puppeteerExtra.use(StealthPlugin());
 
@@ -43,16 +44,16 @@ function getClient(eid) {
   headless: true,
   executablePath:
     process.env.CHROME_PATH ||
-    '/opt/render/.cache/puppeteer/chrome/linux-127.0.6533.88/chrome-linux64/chrome',
+    '/usr/bin/google-chrome-stable',
   args: [
-    '--no-sandbox',
-    '--disable-setuid-sandbox',
-    '--disable-dev-shm-usage',
-    '--disable-gpu',
-    '--no-zygote',
-    '--single-process',
-    '--disable-software-rasterizer'
-  ]
+    "--no-sandbox",
+    "--disable-setuid-sandbox",
+    "--disable-dev-shm-usage",
+    "--disable-gpu",
+    "--no-zygote",
+    "--single-process",
+    "--disable-software-rasterizer",
+  ],
 },
       puppeteerLaunch: puppeteerExtra,
     });
