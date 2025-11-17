@@ -72,16 +72,20 @@ process.env.CHROME_PATH = "/usr/bin/google-chrome-stable";
   function startClient(eid) {
     const client = clients[eid];
 
+    console.log(`🟡 Iniciando cliente ${eid}...`);
+
     client.on("qr", async (qr) => {
       const img = await qrcode.toDataURL(qr);
       fs.writeFileSync(`${SESSION_DIR}/${eid}_qr.txt`, img);
       fs.writeFileSync(`${SESSION_DIR}/${eid}_status.txt`, "disconnected");
+      console.log(`📸 QR gerado para loja ${eid}`);
     });
 
     client.on("ready", () => {
       fs.writeFileSync(`${SESSION_DIR}/${eid}_status.txt`, "connected");
       const f = `${SESSION_DIR}/${eid}_qr.txt`;
       if (fs.existsSync(f)) fs.unlinkSync(f);
+      console.log(`✅ Loja ${eid} conectada ao WhatsApp!`);
     });
 
     // ======================================
@@ -153,13 +157,17 @@ process.env.CHROME_PATH = "/usr/bin/google-chrome-stable";
               const preco = Number(p.preco).toFixed(2).replace(".", ",");
               const link = `https://${dominio}.rapidex.app.br/produto/${p.id}`;
 
+              // preview com imagem (se foto for URL absoluta)
               let media = null;
-              if (p.foto) {
-                const base64 = p.foto.startsWith("http")
-                  ? await (await fetch(p.foto)).buffer().toString("base64")
-                  : null;
-
-                if (base64) media = new MessageMedia("image/jpeg", base64);
+              if (p.foto && typeof p.foto === "string" && p.foto.startsWith("http")) {
+                try {
+                  const resp = await fetch(p.foto);
+                  const buf = Buffer.from(await resp.arrayBuffer());
+                  const base64 = buf.toString("base64");
+                  media = new MessageMedia("image/jpeg", base64);
+                } catch (err) {
+                  console.log("Erro ao carregar imagem do produto:", err.message);
+                }
               }
 
               if (media) {
@@ -185,6 +193,7 @@ process.env.CHROME_PATH = "/usr/bin/google-chrome-stable";
           "menu": `📋 Aqui está o cardápio:\n👉 https://${dominio}.rapidex.app.br`,
           "cardapio": `📋 Cardápio:\n👉 https://${dominio}.rapidex.app.br`,
           "horário": "⏰ Funcionamos das 18h às 23h.",
+          "horario": "⏰ Funcionamos das 18h às 23h.",
           "pagamento": "💳 Pix • Débito • Crédito • Dinheiro",
         };
 
@@ -222,7 +231,7 @@ process.env.CHROME_PATH = "/usr/bin/google-chrome-stable";
 
         if (cfg.length && cfg[0].ativo == 1) {
 
-          const hoje = new Date().toISOString().slice(0,10);
+          const hoje = new Date().toISOString().slice(0, 10);
 
           const [log] = await db.execute(
             "SELECT id FROM whatsapp_logs WHERE rel_estabelecimentos_id=? AND numero=? AND status='boas_vindas' AND DATE(criado_em)=? LIMIT 1",
@@ -253,19 +262,37 @@ process.env.CHROME_PATH = "/usr/bin/google-chrome-stable";
         }
 
       } catch (e) {
-        console.log("Erro:", e.message);
+        console.log("Erro no handler:", e.message);
       }
     });
 
-    client.initialize();
+    client.on("disconnected", () => {
+      fs.writeFileSync(`${SESSION_DIR}/${eid}_status.txt`, "disconnected");
+      client.destroy();
+      delete clients[eid];
+      console.log(`❌ Loja ${eid} desconectada`);
+    });
+
+    client.initialize().catch(err => {
+      console.error("Erro ao inicializar cliente:", err.message);
+    });
   }
 
-  // API:
+  // ===============================
+  // API
+  // ===============================
+  app.get("/", (req, res) => {
+    res.send("✅ Rapidex WhatsApp server online");
+  });
+
   app.get("/qr", (req, res) => {
     const { eid } = req.query;
+    if (!eid) return res.status(400).json({ error: "eid obrigatório" });
+
     const file = `${SESSION_DIR}/${eid}_qr.txt`;
-    if (fs.existsSync(file))
+    if (fs.existsSync(file)) {
       return res.json({ qr: fs.readFileSync(file, "utf8") });
+    }
 
     getClient(eid);
     res.json({ qr: null });
@@ -273,15 +300,23 @@ process.env.CHROME_PATH = "/usr/bin/google-chrome-stable";
 
   app.post("/send", async (req, res) => {
     const { eid, to, message } = req.body;
+    if (!eid || !to || !message) {
+      return res.status(400).json({ error: "Parâmetros faltando (eid, to, message)" });
+    }
+
     const client = getClient(eid);
     try {
       await client.sendMessage(`${to}@c.us`, message);
       res.json({ success: true });
     } catch (err) {
+      console.error("Erro ao enviar mensagem via /send:", err.message);
       res.status(500).json({ error: err.message });
     }
   });
 
-  app.listen(8000, () => console.log("🚀 WhatsApp server online"));
+  const PORT = process.env.PORT || 8000;
+  app.listen(PORT, () =>
+    console.log(`🚀 WhatsApp server online na porta ${PORT}`)
+  );
 
 })();
